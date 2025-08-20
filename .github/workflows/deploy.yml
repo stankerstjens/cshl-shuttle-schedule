@@ -37,10 +37,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
 
   deploy:
-    permissions:
-      contents: read
-      pages: write
-      id_token: write
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
