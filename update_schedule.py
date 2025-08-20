@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from collections import defaultdict
 import itertools
+from pathlib import Path
 from typing import ClassVar, List, Self
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -17,7 +18,6 @@ LOCATIONS = {
         {
             "value": "uri",
             "x-apple-mapkit-handle": "CAESmQIIrk0Qg/r9grPK+e6vARoSCSbXCXHUbURAEVHNgknjXVLAImEKDVVuaXRlZCBTdGF0ZXMSAlVTGghOZXcgWW9yayICTlkqDU5hc3NhdSBDb3VudHkyDUxhdXJlbCBIb2xsb3c6BTExNzkxQgtOb3J0aCBTaG9yZYoBC05vcnRoIFNob3JlKhVDU0hMIEdyYWNlIEF1ZGl0b3JpdW0yElN5b3NzZXQsIE5ZICAxMTc5MTINVW5pdGVkIFN0YXRlc1ABWlYKJQiD+v2Cs8r57q8BEhIJJtcJcdRtREARUc2CSeNdUsAYrk2QAwGiHywIg/r9grPK+e6vARofChVDU0hMIEdyYWNlIEF1ZGl0b3JpdW0QACoCZW5AAA==",
-            # "x-apple-referenceframe": "0",
             "x-apple-radius": "141.1748962402344",
             "x-title": "Grace Auditorium",
         },
@@ -27,7 +27,6 @@ LOCATIONS = {
         {
             "value": "uri",
             "x-apple-mapkit-handle": "CAESpAEIrk0Qp+Ha+Jqewc0wGhIJ6dK/JJVpREAROFz1ygZgUsAiOQoNVW5pdGVkIFN0YXRlcxICVVMaCE5ldyBZb3JrIgJOWSoNTmFzc2F1IENvdW50eTIHU3lvc3NldCoPU3lvc3NldCBTdGF0aW9uMgtTeW9zc2V0LCBOWTINVW5pdGVkIFN0YXRlczgvUAFaFQoTCKfh2viansHNMBiuTZADAZgDAQ==",
-            # "x-apple-referenceframe": "1",
             "x-apple-radius": "188.604673864844",
             "x-title": "Syosset LIRR Station",
         },
@@ -36,7 +35,6 @@ LOCATIONS = {
         "geo:40.861148,-73.462803",
         {
             "value": "uri",
-            # "x-apple-referenceframe": "0",
             "x-apple-radius": "141.1748962402344",
             "x-title": "Knight House",
         },
@@ -46,7 +44,6 @@ LOCATIONS = {
         {
             "value": "uri",
             "x-apple-mapkit-handle": "CAESgAMIrk0QuZHF1ObtsPq4ARoSCaanfpTHbURAEfqH46//XFLAIqEBCg1Vbml0ZWQgU3RhdGVzEgJVUxoITmV3IFlvcmsiAk5ZKg5TdWZmb2xrIENvdW50eTISQ29sZCBTcHJpbmcgSGFyYm9yOgUxMTcyNEILTm9ydGggU2hvcmVSEExhd3JlbmNlIEhpbGwgUmRaAzI1MGIUMjUwIExhd3JlbmNlIEhpbGwgUmRyC0xvbmcgSXNsYW5kigELTm9ydGggU2hvcmUqFlVwbGFuZHMgRmFybSBTYW5jdHVhcnkyFDI1MCBMYXdyZW5jZSBIaWxsIFJkMh1Db2xkIFNwcmluZyBIYXJib3IsIE5ZICAxMTcyNDINVW5pdGVkIFN0YXRlc1ABWloKKAi5kcXU5u2w+rgBEhIJpqd+lMdtREAR+ofjr/9cUsAYrk2QAwGYAwGiHy0IuZHF1ObtsPq4ARogChZVcGxhbmRzIEZhcm0gU2FuY3R1YXJ5EAAqAmVuQAA=",
-            # "x-apple-referenceframe": "1",
             "x-apple-radius": "188.604673864844",
             "x-title": "Uplands Farm",
         },
@@ -63,6 +60,8 @@ LOCATIONS = {
     ),
 }
 
+out_path = Path("out")
+out_path.mkdir(exist_ok=True)
 
 PDF_URL = (
     "https://www.cshl.edu/wp-content/uploads/2025/07/Shuttle-Schedule_06.01.2025.pdf"
@@ -219,7 +218,7 @@ def export_calendars():
                         events[cal_key].add(event_key)
 
     for (fr, to), calendar in calendars.items():
-        with open(f"CSHL_Shuttle-{fr}-{to}.ics", "wb") as f:
+        with (out_path / f"CSHL_Shuttle-{fr}-{to}.ics").open("wb") as f:
             f.write(calendar.to_ical())
 
 
