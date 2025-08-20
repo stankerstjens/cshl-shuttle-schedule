@@ -36,16 +36,16 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
 
-    deploy:
-      permissions:
-        contents: read
-        pages: write
-        id_token: write
-      environment:
-        name: github-pages
-        url: ${{ steps.deploy.outputs.page_url }}
-      needs: build
-      steps:
-        - name: Deploy to GitHub Pages
-          id: deployment
-          uses: actions/deploy-pages@v4
+  deploy:
+    permissions:
+      contents: read
+      pages: write
+      id_token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
