@@ -248,7 +248,6 @@ def extract_table(doc: pymupdf.Document):
     )
 
     parse_table(weekday_table)
-    weekday_table.to_csv(f"weekday_schedule.tsv", sep="\t", index=False)
 
 
 BASE_URL = "webcal://stankerstjens.github.io/cshl-shuttle-schedule"
