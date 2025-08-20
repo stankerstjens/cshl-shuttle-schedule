@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from collections import defaultdict
+import itertools
 from typing import ClassVar, List, Self
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -94,7 +96,7 @@ ALL_STOPS = []
 EVENT_DURATION = timedelta(minutes=5)
 
 
-@dataclass
+@dataclass(frozen=True)
 class Stop:
     time: datetime
     name: str
@@ -162,27 +164,33 @@ def parse_table(table):
 
 def create_calendar(f, t):
     cal = Calendar()
-    cal_name = f"CSHL Shuttle: {f.split(' ')[0]}-{t.split(' ')[0]}"
     cal.add("prodid", f"-//CSHL Shuttle//Schedule//EN")
     cal.add("version", "2.0")
-    cal.add("X-WR-CALNAME", cal_name)
+    cal.add("X-WR-CALNAME", f"CSHL Shuttle: {f.split(' ')[0]}-{t.split(' ')[0]}")
     return cal
 
 
 def export_calendars():
 
     calendars = {}
+    events = defaultdict(set)
 
     for route in Route.all:
-
-        visited = set()
+        to_skip = set()
+        for fr, to in itertools.pairwise(route.stops):
+            if fr.location == to.location and fr.arriving and to.departing:
+                to_skip.add(fr)
 
         for i, fr in enumerate(route.stops):
+            if fr in to_skip:
+                continue
+
+            event_key = (fr.location, fr.time)
 
             event = Event()
             event.add("dtstart", fr.time)
             event.add("duration", EVENT_DURATION)
-            event.add("summary", f"{fr.name}")
+            event.add("summary", f"{route.shuttle}: {fr.location}")
             event.add("description", route.description)
             event.add("rrule", "freq=daily;byday=mo,tu,we,th,fr")
             event.add("location", fr.location)
@@ -195,17 +203,20 @@ def export_calendars():
                     parameters=params,
                 )
 
-            for to in [*route.stops[i + 1 :], *(route.stops[:1] if i > 0 else [])]:
+            for to in [*route.stops[i + 1 :], route.stops[0]]:
                 f, t = fr.location, to.location
-                if f != t:
-                    if t < f:
-                        f, t = t, f
-                    if (f, t) not in calendars:
-                        calendars[(f, t)] = create_calendar(f, t)
 
-                    if f not in visited:
-                        calendars[(f, t)].add_component(event)
-                        visited.add(f)
+                # It really is about the location: it does not serve as an arbitrary
+                # identifier for the stop.
+                if f != t:
+                    cal_key = (f, t) if f < t else (t, f)
+
+                    if cal_key not in calendars:
+                        calendars[cal_key] = create_calendar(f, t)
+
+                    if event_key not in events[cal_key]:
+                        calendars[cal_key].add_component(event)
+                        events[cal_key].add(event_key)
 
     for (fr, to), calendar in calendars.items():
         with open(f"CSHL_Shuttle-{fr}-{to}.ics", "wb") as f:
