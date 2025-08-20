@@ -11,7 +11,7 @@ import pandas as pd
 from dateutil import tz, parser, utils
 import requests
 import pymupdf
-from icalendar import Calendar, Event
+from icalendar import Calendar, Event, Alarm
 
 LOCATIONS = {
     "Grace Auditorium": (
@@ -195,6 +195,10 @@ def export_calendars():
             event.add("rrule", "freq=daily;byday=mo,tu,we,th,fr")
             event.add("location", fr.location)
 
+            # Try to make the event unobtrusive
+            event.add("transp", "TRANSPARENT")
+            event.add("X-MICROSOFT-CDO-BUSYSTATUS", "FREE")
+
             if fr.location in LOCATIONS:
                 geo, params = LOCATIONS[fr.location]
                 event.add(
@@ -247,7 +251,7 @@ def extract_table(doc: pymupdf.Document):
     weekday_table.to_csv(f"weekday_schedule.tsv", sep="\t", index=False)
 
 
-BASE_URL = "https://stankerstjens.github.io/cshl-shuttle-schedule"
+BASE_URL = "webcal://stankerstjens.github.io/cshl-shuttle-schedule"
 
 
 def update_index(paths: list[Path]):
