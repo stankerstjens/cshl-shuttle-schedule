@@ -6,6 +6,7 @@ from typing import ClassVar, List, Self
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
+from jinja2 import FileSystemLoader
 import pandas as pd
 from dateutil import tz, parser, utils
 import requests
@@ -60,7 +61,7 @@ LOCATIONS = {
     ),
 }
 
-out_path = Path("out")
+out_path = Path("cal")
 out_path.mkdir(exist_ok=True)
 
 PDF_URL = (
@@ -189,7 +190,7 @@ def export_calendars():
             event = Event()
             event.add("dtstart", fr.time)
             event.add("duration", EVENT_DURATION)
-            event.add("summary", f"{route.shuttle}: {fr.location}")
+            event.add("summary", f"{fr.location}")
             event.add("description", route.description)
             event.add("rrule", "freq=daily;byday=mo,tu,we,th,fr")
             event.add("location", fr.location)
@@ -217,9 +218,14 @@ def export_calendars():
                         calendars[cal_key].add_component(event)
                         events[cal_key].add(event_key)
 
+    paths = []
     for (fr, to), calendar in calendars.items():
-        with (out_path / f"CSHL_Shuttle-{fr}-{to}.ics").open("wb") as f:
+        fn = out_path / f"{fr}-{to}.ics".replace(" ", "_")
+        paths.append(fn)
+        with fn.open("wb") as f:
             f.write(calendar.to_ical())
+
+    return paths
 
 
 def extract_table(doc: pymupdf.Document):
@@ -229,7 +235,8 @@ def extract_table(doc: pymupdf.Document):
         raise ValueError("Expected a single-page PDF document.")
     page: pymupdf.Page = doc[0]  # Get the first page
 
-    weekday_table, weekend_table = map(
+    # Second variable is the weekend table
+    weekday_table, _ = map(
         to_pandas_table,
         page.find_tables(  # type: ignore
             strategy="lines_strict",
@@ -240,8 +247,27 @@ def extract_table(doc: pymupdf.Document):
     weekday_table.to_csv(f"weekday_schedule.tsv", sep="\t", index=False)
 
 
+BASE_URL = "https://stankerstjens.github.io/cshl-shuttle-schedule"
+
+
+def update_index(paths: list[Path]):
+    from jinja2 import Environment
+
+    env = Environment(loader=FileSystemLoader("."), autoescape=True)
+    env.get_template("index_template.html")
+
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(
+            env.get_template("index_template.html").render(
+                cal_links=list(map(str, paths)),
+                base_url=BASE_URL,
+            )
+        )
+
+
 if __name__ == "__main__":
 
     doc = get_schedule_doc(PDF_URL)
-    extract_table(doc)
-    export_calendars()
+    extract_table(doc)  # Fills Route.all variable
+    paths = export_calendars()
+    update_index(paths)

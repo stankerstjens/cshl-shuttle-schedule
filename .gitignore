@@ -1,3 +1,5 @@
 .venv/
 locations.ics
 *.tsv
+
+.DS_Store
